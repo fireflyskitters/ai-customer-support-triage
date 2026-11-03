@@ -2,81 +2,101 @@
 AI-powered customer support ticket triage automation built with n8n
 
 ## Project Overview
+Customer support teams often spend time manually reviewing emails and determining which issues require immediate attention. This workflow monitors emails automatically, uses an LLM to classify them by department (e.g. technical support, billing), and assigns an urgency level. It then sends the emails to the right departments and posts on Slack if an issue is urgent. 
 
-Customer support teams often spend time manually reviewing emails, identifying the nature of each request, and determining which issues require immediate attention.
+## Current Workflow Architecture
 
-This workflow automates the initial triage process by:
+<img width="858" height="436" alt="Screenshot 2026-11-04 at 12 22 54 AM" src="https://github.com/user-attachments/assets/fd77f67e-9743-4720-ab70-986896993e75" />
 
-1. Monitoring a customer support Gmail inbox.
-2. Extracting relevant information from incoming emails.
-3. Using an LLM to classify each request.
-4. Assigning an urgency level based on the reported issue.
-5. Recording the results in Google Sheets.
-6. Handling classification failures through retry logic and fallback logging.
+How it works:
 
-## Workflow Architecture
+### 1. Detect Emails via Gmail
 
-How It Works
+The workflow periodically checks a dedicated support Gmail inbox for new customer emails.
 
-1. Email Reception — Gmail Trigger
-
-The workflow checks a dedicated support inbox for new customer emails.
-
-2. Data Extraction — Edit Fields
+### 2. Data Extraction 
 
 Relevant email information is extracted and standardized, including:
-
 * Message ID
 * Sender
 * Subject
-* Email body
+* Email preview (Gmail snippet)
 * Received timestamp
 
-3. AI Classification — Basic LLM Chain
+### 3. Issue Classification by AI
 
-The email is analyzed using a Groq-hosted language model.
-
-The model assigns exactly one category and one urgency level.
+Each email is analyzed using a Groq-hosted language model. The model assigns exactly one category and one urgency level.
 
 Categories:
-
 * Billing
 * Technical Support
 * Account Management
 * General Inquiry
 
 Urgency Levels:
-
 * High: Critical outages, security incidents, or time-sensitive operational blockers.
 * Medium: Issues disrupting normal operations without immediate critical consequences.
 * Low: Routine requests and general inquiries.
 
-A Structured Output Parser ensures that classifications are returned in a consistent JSON format.
+A Structured Output Parser enforces a consistent JSON output structure.
 
-4. Ticket Logging — Google Sheets
+### 4. Ticket Logging on Google Sheets
 
-The workflow records incoming email details and classification results in a Google Sheets ticket log.
+The workflow records email details and classification results in a Google Sheets ticket log.
 
-5. Basic Error Handling
+Each record includes the message ID, sender, subject, email preview, received timestamp, category, and urgency.
 
-The workflow includes retry logic for temporary classification failures.
+### 5. Department Routing — Edit Fields + Gmail
 
-If classification ultimately fails, the error branch records the email with fallback values:
+The workflow maps each classified ticket to its corresponding department (e.g. billing team). It then sends an email with the ticket. 
 
-* Category: Unclassified
-* Urgency: Needs Review
+For testing, Gmail plus-addressing simulates multiple departments using one inbox.
 
-This allows failed classifications to be identified for manual review.
+### 6. Urgent Ticket Escalation on Slack
+
+An IF node checks whether the ticket has been classified as High urgency. High-urgency tickets trigger a Slack notification in a dedicated support channel.
+
+Each alert includes the assigned department, urgency level, customer information, and reported issue to help the team prioritize its response.
+
+Medium- and Low-urgency tickets do not trigger Slack escalation.
+
+### 7. Basic Error Handling
+
+The workflow includes retry logic for temporary AI classification, Gmail, and Slack failures. Any error gets recorded in Google Sheets logs. 
+
+Persistent logging of notification failures remains a planned improvement.
+
+## Example Outputs
+
+AI Classification and Ticket Log (Google Sheets)
+
+<img width="923" height="226" alt="Screenshot 2026-11-04 at 12 31 30 AM" src="https://github.com/user-attachments/assets/e92345e6-ca93-432e-8422-63e3fb8ebca1" />
+
+Department Email Notification
+
+<img width="1455" height="1081" alt="Redacted Customer Support Invoice Email" src="https://github.com/user-attachments/assets/e144483c-3dfd-4e58-b910-53c1b014c305" />
+
+Urgent Ticket Escalation on Slack
+
+<img width="840" height="283" alt="Screenshot 2026-11-04 at 12 35 57 AM" src="https://github.com/user-attachments/assets/5ccb13ff-4f45-49da-90a6-e9dcccd7444e" />
+
+## Tech Stack
+
+* n8n: Workflow orchestration, conditional routing, and error handling
+* Gmail: Email ingestion and department notifications
+* Groq API: LLM-powered ticket classification
+* Google Sheets: Ticket logging and classification failure tracking
+* Slack: High-urgency ticket escalation
 
 ## Current Limitations
 
-* AI classifications may occasionally be inaccurate.
+* AI classifications may occasionally be inaccurate and require human review.
 * It assumes one category per email, rather than handling different types of issues in one email. 
-* Error handling does not cover every possible integration failure.
+* Error handling does not yet cover every possible integration failure.
 
 ## Development Roadmap
 
-### Version 1 — Email Classification and Logging
+### Version 1 — Email Classification and Logging (Completed)
 
 * Gmail email ingestion
 * AI-powered ticket classification
@@ -84,18 +104,14 @@ This allows failed classifications to be identified for manual review.
 * Google Sheets logging
 * Basic error handling
 
-### Version 2 — Department Routing
+### Version 2 — Department Routing and Urgent Escalation (Completed)
 
-Route classified tickets to the appropriate (test) emails.
+* Dynamic department assignment
+* Automated Gmail notifications
+* Slack escalation for High-urgency tickets
+* Notification retry logic
+* Basic notification error-processing branches
 
-### Version 3 — Suggested Responses
-
-Generate AI-powered response drafts for support agents to review.
-
-### Version 4 — Urgent Ticket Escalation
-
-Automatically escalate high-urgency requests.
-
-### Version 5 — Reliability Improvements
+### Version 3 — Reliability Improvements (Planned)
 
 Introduce additional validation, duplicate detection, monitoring, and error recovery.
