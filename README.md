@@ -78,7 +78,7 @@ Department Email Notification
 
 Urgent Ticket Escalation on Slack
 
-<img width="840" height="283" alt="Screenshot 2026-11-04 at 12 35 57 AM" src="https://github.com/user-attachments/assets/5ccb13ff-4f45-49da-90a6-e9dcccd7444e" />
+<img width="2160" height="728" alt="Urgent Customer Support Ticket Notification" src="https://github.com/user-attachments/assets/1cf88e5a-7c7c-43bc-81dd-556784999d08" />
 
 ## Tech Stack
 
